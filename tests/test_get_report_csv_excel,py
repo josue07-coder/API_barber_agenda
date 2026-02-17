@@ -1,0 +1,12 @@
+def test_export_csv_income_by_barber(client, admin_token):
+    from datetime import date
+
+    response = client.get(
+        f"/api/v1/reports/financial/by-barber/export/csv"
+        f"?start_date={date.today()}&end_date={date.today()}",
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+
+    assert response.status_code == 200
+    assert "text/csv" in response.headers["content-type"]
+    assert "attachment" in response.headers["content-disposition"]

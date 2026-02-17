@@ -1,0 +1,66 @@
+def test_clients_with_no_show(db, client, admin_token):
+    from datetime import date, time
+    from app.models.user import User
+    from app.models.client import Client
+    from app.models.service import Service
+    from app.models.appointment import Appointment
+    from app.core.security import get_password_hash
+
+    barber = User(
+        name="Carlos",
+        email="c@b.com",
+        password=get_password_hash("123"),
+        role="barber",
+        is_active=True
+    )
+
+    client1 = Client(name="Pedro", phone="111", is_active=True)
+    client2 = Client(name="Ana", phone="222", is_active=True)
+
+    service = Service(name="Corte", duration_minutes=30, price=100, is_active=True)
+
+    db.add_all([barber, client1, client2, service])
+    db.commit()
+
+    a1 = Appointment(
+        user_id=barber.id,
+        client_id=client1.id,
+        service_id=service.id,
+        date=date.today(),
+        start_time=time(9, 0),
+        end_time=time(9, 30),
+        status="no_show"
+    )
+    a2 = Appointment(
+        user_id=barber.id,
+        client_id=client1.id,
+        service_id=service.id,
+        date=date.today(),
+        start_time=time(10, 0),
+        end_time=time(10, 30),
+        status="no_show"
+    )
+    a3 = Appointment(
+        user_id=barber.id,
+        client_id=client2.id,
+        service_id=service.id,
+        date=date.today(),
+        start_time=time(11, 0),
+        end_time=time(11, 30),
+        status="no_show"
+    )
+
+    db.add_all([a1, a2, a3])
+    db.commit()
+
+    response = client.get(
+        f"/api/v1/reports/clients/no-show"
+        f"?start_date={date.today()}&end_date={date.today()}",
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data[0]["client"] == "Pedro"
+    assert data[0]["no_show"] == 2
