@@ -8,3 +8,8 @@ passlib
 bcrypt
 pytest
 httpx
+python-dotenv
+pydantic-settings
+email-validator
+python-multipart
+openpyxl

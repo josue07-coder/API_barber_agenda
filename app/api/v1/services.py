@@ -15,7 +15,7 @@ from app.services.service_service import (
     update_existing_service,
     deactivate_service
 )
-from app.core.dependecies import require_role, get_current_user
+from app.api.deps import require_role, get_current_user
 
 router = APIRouter()
 
@@ -24,10 +24,11 @@ router = APIRouter()
 @router.get("/", response_model=List[ServiceResponse])
 def list_services_api(
     search: Optional[str] = Query(None, description="Buscar servicio por nombre"),
+    branch_id: Optional[int] = Query(default=None),
     db: Session = Depends(get_db),
     _=Depends(get_current_user)
 ):
-    return list_service(db, search)
+    return list_service(db, search, branch_id)
 
 
 # 🔹 Obtener servicio por ID

@@ -1,3 +1,4 @@
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from datetime import date
 from typing import Optional
@@ -6,16 +7,21 @@ from app.models.appointment import Appointment
 
 
 def create_appointment(db: Session, appointment: Appointment) -> Appointment:
-    db.add(appointment)
-    db.commit()
-    db.refresh(appointment)
-    return appointment
+    try:
+        db.add(appointment)
+        db.commit()
+        db.refresh(appointment)
+        return appointment
+    except IntegrityError:
+        db.rollback()
+        raise
 
 
 def get_appointments(
     db: Session,
     *,
     barber_id: Optional[int] = None,
+    branch_id: Optional[int] = None,
     client_id: Optional[int] = None,
     appointment_date: Optional[date] = None,
     status: Optional[str] = None,
@@ -26,6 +32,9 @@ def get_appointments(
 
     if barber_id is not None:
         query = query.filter(Appointment.user_id == barber_id)
+
+    if branch_id is not None:
+        query = query.filter(Appointment.branch_id == branch_id)
 
     if client_id is not None:
         query = query.filter(Appointment.client_id == client_id)
@@ -69,6 +78,24 @@ def get_appointments_by_day(
     )
 
 
+def get_appointments_by_day_for_update(
+    db: Session,
+    barber_id: int,
+    day: date
+) -> list[Appointment]:
+    return (
+        db.query(Appointment)
+        .filter(
+            Appointment.user_id == barber_id,
+            Appointment.date == day,
+            Appointment.status.notin_(["cancelada", "no_show"])
+        )
+        .order_by(Appointment.start_time)
+        .with_for_update()
+        .all()
+    )
+
+
 def get_appointments_by_barber(
     db: Session,
     barber_id: int
@@ -97,6 +124,22 @@ def update_appointment(
     db: Session,
     appointment: Appointment
 ) -> Appointment:
-    db.commit()
-    db.refresh(appointment)
-    return appointment
+    try:
+        db.commit()
+        db.refresh(appointment)
+        return appointment
+    except IntegrityError:
+        db.rollback()
+        raise
+
+
+def flush_appointment(
+    db: Session,
+    appointment: Appointment
+) -> Appointment:
+    try:
+        db.flush()
+        return appointment
+    except IntegrityError:
+        db.rollback()
+        raise

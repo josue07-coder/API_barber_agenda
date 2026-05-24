@@ -1,31 +1,32 @@
 import csv
 import io
-from typing import List, Dict
+from typing import List, Dict, Optional
 from openpyxl import Workbook
 
-def export_to_csv(data: List[Dict]) -> io.StringIO:
+def export_to_csv(data: List[Dict], fieldnames: Optional[List[str]] = None) -> io.StringIO:
         output = io.StringIO()
 
-        if not data:
+        if not data and not fieldnames:
                 return output
         
-        writer = csv.DictWriter(output, fieldnames=data[0].keys())
+        writer = csv.DictWriter(output, fieldnames=fieldnames or data[0].keys())
         writer.writeheader()
         writer.writerows(data)
 
         output.seek(0)
         return output
 
-def export_to_excel(data: List[Dict]) -> io.BytesIO:
+def export_to_excel(data: List[Dict], fieldnames: Optional[List[str]] = None) -> io.BytesIO:
         output = io.BytesIO()
         wb = Workbook()
         ws = wb.active
         ws.title = "Reporte"
 
-        if data:
-            ws.append(list(data[0].keys()))
+        headers = fieldnames or (list(data[0].keys()) if data else None)
+        if headers:
+            ws.append(list(headers))
         for row in data:
-            ws.append(list(row.values()))
+            ws.append([row.get(field) for field in headers])
 
         wb.save(output)
         output.seek(0)

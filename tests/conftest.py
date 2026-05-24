@@ -11,7 +11,7 @@ from app.database.session import get_db
 
 from app.core.security import get_password_hash, create_access_token
 from app.models.user import User
-from app.core.dependecies import get_current_user
+from app.api.deps import get_current_user
 
 
 
@@ -50,6 +50,31 @@ def client(db, override_current_user):
     app.dependency_overrides[get_current_user] = override_current_user
 
     yield TestClient(app)
+
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client_without_auth_override(db):
+    def override_get_db():
+        yield db
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    yield TestClient(app)
+
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client_no_raise(db, override_current_user):
+    def override_get_db():
+        yield db
+
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_user] = override_current_user
+
+    yield TestClient(app, raise_server_exceptions=False)
 
     app.dependency_overrides.clear()
 

@@ -8,7 +8,15 @@ class ClientBase(BaseModel):
     notes: Optional[str] = None
 
 class ClientCreate(ClientBase):
-    pass
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "name": "Juan Perez",
+                "phone": "8095551234",
+                "notes": "Prefiere corte bajo"
+            }
+        }
+    )
 
 class ClientUpdate(BaseModel):
     name: Optional[str] = None
@@ -16,8 +24,34 @@ class ClientUpdate(BaseModel):
     notes: Optional[str] = None
     is_active: Optional[str] = None
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "phone": "8095559876",
+                "notes": "Cliente frecuente"
+            }
+        }
+    )
+
 class ClientResponse(ClientBase):
     id: int
     is_active: bool
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ClientProfileUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=2)
+    phone: Optional[str] = Field(default=None, min_length=7, max_length=15)
+    notes: Optional[str] = None
+
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "example": {
+                "name": "Juan Perez",
+                "phone": "8095559876",
+                "notes": "Prefiere la tarde"
+            }
+        }
+    )

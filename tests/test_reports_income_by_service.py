@@ -1,9 +1,10 @@
 def test_income_by_service(db, client, admin_token):
-    from datetime import date, time
+    from datetime import date, datetime, time, timezone
     from app.models.user import User
     from app.models.client import Client
     from app.models.service import Service
     from app.models.appointment import Appointment
+    from app.models.payment import Payment
     from app.core.security import get_password_hash
 
     barber = User(
@@ -50,6 +51,36 @@ def test_income_by_service(db, client, admin_token):
     )
 
     db.add_all([a1, a2, a3])
+    db.commit()
+    db.add_all([
+        Payment(
+            appointment_id=a1.id,
+            client_id=client1.id,
+            amount=100,
+            currency="DOP",
+            payment_method="cash",
+            status="paid",
+            paid_at=datetime.now(timezone.utc),
+        ),
+        Payment(
+            appointment_id=a2.id,
+            client_id=client1.id,
+            amount=50,
+            currency="DOP",
+            payment_method="card",
+            status="paid",
+            paid_at=datetime.now(timezone.utc),
+        ),
+        Payment(
+            appointment_id=a3.id,
+            client_id=client1.id,
+            amount=100,
+            currency="DOP",
+            payment_method="cash",
+            status="paid",
+            paid_at=datetime.now(timezone.utc),
+        ),
+    ])
     db.commit()
 
     response = client.get(

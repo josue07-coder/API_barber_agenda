@@ -6,6 +6,6 @@ class Client(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
-    phone = Column(String(20), nullable=False)
+    phone = Column(String(20), unique=True, nullable=False)
     notes = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True)

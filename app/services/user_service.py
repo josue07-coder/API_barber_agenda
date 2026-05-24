@@ -10,7 +10,9 @@ from app.repositories.user_repo import (
 )
 from app.schema.user import UserUpdate
 from app.models.user import User
+from app.models.user_role import UserRole
 from app.core.security import hash_password
+from app.services.branch_service import get_active_branch_or_404
 
 
 def get_all_users(db:Session):
@@ -47,7 +49,11 @@ def update_user(db: Session, user_id: int, data: UserUpdate, current_user: User)
 
         if current_user.role == "admin":
                 if data.role is not None:
-                        user.role = data.role
+                        user.role = data.role.value
+
+                if data.branch_id is not None:
+                        get_active_branch_or_404(db, data.branch_id)
+                        user.branch_id = data.branch_id
 
                 if data.is_active is not None:
                         user.is_active = data.is_active

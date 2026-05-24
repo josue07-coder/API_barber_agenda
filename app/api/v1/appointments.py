@@ -9,20 +9,27 @@ from app.schema.appointment import (
     AppointmentUpdate,
     AppointmentResponse,
     AvailableSlotsResponse,
-    AppointmentStatusUpdate
+    AppointmentStatusUpdate,
+    AppointmentCancel,
+    AppointmentHistoryResponse,
+    AppointmentReschedule,
 )
 from app.services.appointment_service import (
     create_new_appointment,
     update_existing_appointment,
     cancel_appointment,
+    change_appointment_status,
     list_all_appointments,
     list_appointments_by_barber,
     list_appointments_by_client,
     list_appointments_by_day,
+    list_appointment_history,
     get_available_slots,
+    reschedule_appointment,
     update_appointment_status
 )
-from app.core.dependecies import get_current_user, require_role
+from app.models.appointment_status import AppointmentStatus
+from app.api.deps import get_current_user, require_role
 from app.models.user import User
 
 router = APIRouter()
@@ -42,6 +49,7 @@ def create_appointment_api(
 @router.get("/", response_model=List[AppointmentResponse])
 def get_all_appointments_api(
     barber_id: int | None = None,
+    branch_id: int | None = None,
     client_id: int | None = None,
     date_: date | None = None,
     status: str | None = None,
@@ -54,6 +62,7 @@ def get_all_appointments_api(
         db,
         current_user=current_user,
         barber_id=barber_id,
+        branch_id=branch_id,
         client_id=client_id,
         appointment_date=date_,
         status=status,
@@ -135,6 +144,82 @@ def cancel_appointment_api(
 ):
     cancel_appointment(db, appointment_id, current_user)
 
+
+@router.patch("/{appointment_id}/cancel", response_model=AppointmentResponse)
+def cancel_appointment_patch_api(
+    appointment_id: int,
+    data: AppointmentCancel | None = Body(default=None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return cancel_appointment(
+        db,
+        appointment_id,
+        current_user,
+        reason=data.reason if data else None,
+    )
+
+
+@router.patch("/{appointment_id}/reschedule", response_model=AppointmentResponse)
+def reschedule_appointment_api(
+    appointment_id: int,
+    data: AppointmentReschedule,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return reschedule_appointment(db, appointment_id, data, current_user)
+
+
+@router.patch("/{appointment_id}/confirm", response_model=AppointmentResponse)
+def confirm_appointment_api(
+    appointment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return change_appointment_status(
+        db,
+        appointment_id,
+        AppointmentStatus.confirmada,
+        current_user,
+    )
+
+
+@router.patch("/{appointment_id}/complete", response_model=AppointmentResponse)
+def complete_appointment_api(
+    appointment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return change_appointment_status(
+        db,
+        appointment_id,
+        AppointmentStatus.completada,
+        current_user,
+    )
+
+
+@router.patch("/{appointment_id}/no-show", response_model=AppointmentResponse)
+def no_show_appointment_api(
+    appointment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return change_appointment_status(
+        db,
+        appointment_id,
+        AppointmentStatus.no_show,
+        current_user,
+    )
+
+
+@router.get("/{appointment_id}/history", response_model=List[AppointmentHistoryResponse])
+def get_appointment_history_api(
+    appointment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return list_appointment_history(db, appointment_id, current_user)
+
 # obtener horarios disponibles
 @router.get(
     "/available-slots",
@@ -144,6 +229,7 @@ def get_available_slots_api(
     barber_id: int,
     service_id: int,
     date_: date = Query(..., alias="date"),
+    branch_id: int | None = Query(default=None),
     db: Session = Depends(get_db),
    current_user: User = Depends(get_current_user)
 ):
@@ -154,7 +240,8 @@ def get_available_slots_api(
         db,
         barber_id=barber_id,
         service_id=service_id,
-        appointment_date=date_
+        appointment_date=date_,
+        branch_id=branch_id,
     )
     return {"slots": slots}
 

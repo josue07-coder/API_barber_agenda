@@ -5,6 +5,21 @@ from app.schema.client import ClientCreate
 def get_client_by_id(db: Session, client_id: int) -> Client | None:
     return db.query(Client).filter(Client.id == client_id, Client.is_active == True).first()
 
+def get_client_by_phone(db: Session, phone: str) -> Client | None:
+    return db.query(Client).filter(Client.phone == phone, Client.is_active == True).first()
+
+def phone_exists_for_other_client(db: Session, phone: str, client_id: int) -> bool:
+    return (
+        db.query(Client.id)
+        .filter(
+            Client.phone == phone,
+            Client.id != client_id,
+            Client.is_active == True,
+        )
+        .first()
+        is not None
+    )
+
 def get_clients(
     db: Session,
     search: str | None = None

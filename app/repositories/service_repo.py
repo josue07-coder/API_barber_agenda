@@ -10,11 +10,14 @@ def get_active_service_by_id(db: Session, service_id: int) -> Service | None:
         Service.is_active == True
     ).first()
 
-def get_services(db: Session, search: str | None = None):
+def get_services(db: Session, search: str | None = None, branch_id: int | None = None):
     query = db.query(Service).filter(Service.is_active == True)
 
     if search:
         query = query.filter(Service.name.ilike(f"%{search}%"))
+
+    if branch_id is not None:
+        query = query.filter(Service.branch_id == branch_id)
 
     return query.order_by(Service.name).all()
 

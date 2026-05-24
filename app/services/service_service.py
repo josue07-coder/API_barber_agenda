@@ -10,12 +10,17 @@ from app.repositories.service_repo import (
     update_service,
     deactivate_service as deactivate_service_repo
 )
+from app.services.branch_service import get_active_branch_or_404
 
 def create_new_service(db: Session, data: ServiceCreate):
+    if data.branch_id is not None:
+        get_active_branch_or_404(db, data.branch_id)
+
     service = Service(
         name=data.name,
         duration_minutes=data.duration_minutes,
         price=data.price,
+        branch_id=data.branch_id,
         is_active=True
     )
     return create_service(db, service)
@@ -26,8 +31,10 @@ def get_service_id(db: Session, service_id: int):
         raise HTTPException(404, "Servicio no encontrado")
     return service
 
-def list_service(db: Session, search: str | None = None):
-    return get_services(db, search)
+def list_service(db: Session, search: str | None = None, branch_id: int | None = None):
+    if branch_id is not None:
+        get_active_branch_or_404(db, branch_id)
+    return get_services(db, search, branch_id)
 
 def update_existing_service(
     db: Session,
@@ -46,6 +53,10 @@ def update_existing_service(
 
     if data.price is not None:
         service.price = data.price
+
+    if data.branch_id is not None:
+        get_active_branch_or_404(db, data.branch_id)
+        service.branch_id = data.branch_id
 
     if data.is_active is not None:
         service.is_active = data.is_active

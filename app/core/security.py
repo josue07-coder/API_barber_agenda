@@ -1,20 +1,18 @@
 from datetime import datetime, timedelta, timezone
-from jose import jwt, JWTError
 from typing import Optional
-import hashlib, bcrypt
+import hashlib
+
+import bcrypt
+from jose import JWTError, jwt
 
 from app.core.config import settings
 
 
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 día
-
-
-#  Password hashing
 def hash_password(password: str) -> str:
     sha = hashlib.sha256(password.encode("utf-8")).hexdigest()
     hashed = bcrypt.hashpw(sha.encode("utf-8"), bcrypt.gensalt())
     return hashed.decode("utf-8")
+
 
 def get_password_hash(password: str) -> str:
     return hash_password(password)
@@ -28,33 +26,30 @@ def verify_password(password: str, hashed_password: str) -> bool:
     )
 
 
-#  JWT
 def create_access_token(
     data: dict,
     expires_delta: Optional[timedelta] = None
 ) -> str:
     to_encode = data.copy()
-
-    expire = datetime.now(timezone.utc) + (
-         timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire_delta = expires_delta or timedelta(
+        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
-
+    expire = datetime.now(timezone.utc) + expire_delta
     to_encode.update({"exp": expire})
 
     return jwt.encode(
         to_encode,
         settings.SECRET_KEY,
-        algorithm=ALGORITHM
+        algorithm=settings.JWT_ALGORITHM
     )
 
 
 def decode_access_token(token: str) -> Optional[dict]:
     try:
-        payload = jwt.decode(
+        return jwt.decode(
             token,
             settings.SECRET_KEY,
-            algorithms=[ALGORITHM]
+            algorithms=[settings.JWT_ALGORITHM]
         )
-        return payload
     except JWTError:
         return None

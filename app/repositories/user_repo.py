@@ -18,6 +18,12 @@ def get_active_user_by_id(db: Session, user_id: int):
 def get_user_by_email (db: Session, email) -> User | None:
         return db.query(User).filter(User.email == email, User.is_active == True).first()
 
+def get_user_by_client_id(db: Session, client_id: int) -> User | None:
+        return db.query(User).filter(User.client_id == client_id, User.is_active == True).first()
+
+def admin_exists(db: Session) -> bool:
+        return db.query(User.id).filter(User.role == "admin").first() is not None
+
 def create_user(db: Session, user:User) -> User:
         db.add(user)
         db.commit()
